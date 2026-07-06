@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Turo Tracker{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a href="{{ url_for('dashboard') }}" class="brand">🚗 {{ business_name or 'Turo Tracker' }}</a>
+    <div class="topbar-actions">
+      <a href="{{ url_for('general_expenses') }}" class="btn btn-secondary btn-small">General Expenses</a>
+      <a href="{{ url_for('distributions') }}" class="btn btn-secondary btn-small">Distributions</a>
+      <a href="{{ url_for('monthly_summary') }}" class="btn btn-secondary btn-small">Monthly Summary</a>
+      <a href="{{ url_for('utilization') }}" class="btn btn-secondary btn-small">Utilization</a>
+      <a href="{{ url_for('import_csv') }}" class="btn btn-secondary btn-small">Import CSV</a>
+      <a href="{{ url_for('tax_export') }}" class="btn btn-secondary btn-small">Tax Export</a>
+      <a href="{{ url_for('manage_users') }}" class="btn btn-secondary btn-small">Users</a>
+      <a href="{{ url_for('settings') }}" class="btn btn-secondary btn-small">Settings</a>
+      <a href="{{ url_for('new_car') }}" class="btn btn-small">+ Add Car</a>
+      {% if current_user %}
+      <form method="POST" action="{{ url_for('logout') }}" class="inline-form">
+        <button type="submit" class="btn btn-secondary btn-small">Log Out ({{ current_user.display_name or current_user.username }})</button>
+      </form>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashes">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <div class="version-tag">v{{ app_version }}</div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Up - Turo Tracker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="container" style="max-width: 420px; margin-top: 60px;">
+    <h2 style="text-align:center;">🚗 Turo Tracker</h2>
+    <p class="subtitle" style="text-align:center;">First-time setup &mdash; create the first account to get started.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashes">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="form">
+      <label>Your name
+        <input type="text" name="display_name" placeholder="e.g. Jon">
+      </label>
+      <label>Username *
+        <input type="text" name="username" required autofocus>
+      </label>
+      <label>Password *
+        <input type="password" name="password" required>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn">Create Account</button>
+      </div>
+    </form>
+
+    <p class="subtitle" style="margin-top:16px;">
+      You'll be able to add accounts for other partners once you're logged in, from the Users page.
+    </p>
+  </main>
+
+  <div class="version-tag">v{{ app_version }}</div>
+</body>
+</html>

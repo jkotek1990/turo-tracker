@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if expense else 'Add' }} General Expense - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>{{ 'Edit' if expense else 'Add' }} General Expense</h2>
+<p class="subtitle" style="margin-top:-4px;">
+  For costs shared across your whole fleet (cleaning supplies, etc.) rather than one car.
+</p>
+
+<form method="POST" class="form">
+  <label>Date *
+    <input type="date" name="date" required value="{{ expense.date if expense else today }}">
+  </label>
+
+  <label>Category *
+    <select name="category" required>
+      {% for cat in categories_expense %}
+        <option value="{{ cat }}" {{ 'selected' if expense and expense.category == cat }}>{{ cat }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Amount ($) *
+    <input type="number" step="0.01" min="0" name="amount" required value="{{ expense.amount if expense else '' }}">
+  </label>
+
+  <label class="checkbox">
+    <input type="checkbox" name="paid_by_company" {{ 'checked' if not expense or expense.paid_by_company }}>
+    Paid directly from the company (uncheck if you need to be reimbursed)
+  </label>
+
+  <label>Notes
+    <textarea name="notes" rows="3" placeholder="Optional details">{{ expense.notes if expense else '' }}</textarea>
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn">{{ 'Save Changes' if expense else 'Add Expense' }}</button>
+    <a href="{{ url_for('general_expenses') }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+
+{% endblock %}

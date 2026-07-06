@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ car.nickname }} - Turo Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2>{{ car.nickname }}</h2>
+    <p class="subtitle">{{ car.year or '' }} {{ car.make or '' }} {{ car.model or '' }}</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('new_transaction', car_id=car.id) }}" class="btn">+ Add Transaction</a>
+    <a href="{{ url_for('edit_car', car_id=car.id) }}" class="btn btn-secondary">Edit Car</a>
+  </div>
+</div>
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Income</div>
+    <div class="card-value income">${{ "%.2f"|format(totals.income) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Expenses</div>
+    <div class="card-value expense">${{ "%.2f"|format(totals.expense) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Net Profit</div>
+    <div class="card-value {{ 'income' if totals.net >= 0 else 'expense' }}">${{ "%.2f"|format(totals.net) }}</div>
+  </div>
+  {% if car.funding_type %}
+  <div class="card">
+    <div class="card-label">Owed to {{ 'you' if car.funding_type == 'cash' else 'bank' }}</div>
+    <div class="card-value {{ 'expense' if owed.remaining > 0 else 'income' }}">${{ "%.2f"|format(owed.remaining) }}</div>
+  </div>
+  {% endif %}
+  {% if reimbursement > 0 %}
+  <a class="card card-link" href="{{ url_for('reimbursements', car_id=car.id) }}">
+    <div class="card-label">Owed for Reimbursement</div>
+    <div class="card-value expense">${{ "%.2f"|format(reimbursement) }}</div>
+  </a>
+  {% endif %}
+</section>
+
+{% if car.funding_type %}
+<div class="page-header">
+  <h3>Payback Balance &mdash; {{ 'Owed to You' if car.funding_type == 'cash' else 'Owed to Bank' }}</h3>
+  <div class="page-header-actions">
+    <a href="{{ url_for('new_payback', car_id=car.id) }}" class="btn">+ Log Payback</a>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:-8px;">
+  Original: ${{ "%.2f"|format(owed.initial) }} &mdash; Paid back so far: ${{ "%.2f"|format(owed.paid) }} &mdash; Remaining: ${{ "%.2f"|format(owed.remaining) }}
+</p>
+
+{% if not paybacks %}
+  <p class="empty-state">No paybacks logged yet.</p>
+{% else %}
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Notes</th>
+      <th class="right">Amount</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for pb in paybacks %}
+    <tr>
+      <td>{{ pb.date }}</td>
+      <td class="notes">{{ pb.notes or '' }}</td>
+      <td class="right income">-${{ "%.2f"|format(pb.amount) }}</td>
+      <td class="row-actions">
+        <a href="{{ url_for('edit_payback', payback_id=pb.id) }}">Edit</a>
+        <form method="POST" action="{{ url_for('delete_payback', payback_id=pb.id) }}"
+              onsubmit="return confirm('Delete this payback?');" class="inline-form">
+          <button type="submit" class="link-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+
+<h3>Transactions</h3>
+
+{% if not transactions %}
+  <p class="empty-state">No transactions yet. <a href="{{ url_for('new_transaction', car_id=car.id) }}">Add the first one</a>.</p>
+{% else %}
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Type</th>
+      <th>Category</th>
+      <th>Paid</th>
+      <th>Notes</th>
+      <th class="right">Amount</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for txn in transactions %}
+    <tr>
+      <td>{{ txn.date }}</td>
+      <td><span class="pill pill-{{ txn.type }}">{{ txn.type }}</span></td>
+      <td>{{ txn.category }}</td>
+      <td>
+        {% if txn.type == 'expense' %}
+          {% if txn.paid_by_company %}<span class="pill pill-neutral">Company</span>{% else %}<span class="pill pill-warn">Reimburse</span>{% endif %}
+        {% else %}
+          &mdash;
+        {% endif %}
+      </td>
+      <td class="notes">{{ txn.notes or '' }}</td>
+      <td class="right {{ 'income' if txn.type == 'income' else 'expense' }}">
+        {{ '+' if txn.type == 'income' else '-' }}${{ "%.2f"|format(txn.amount) }}
+      </td>
+      <td class="row-actions">
+        <a href="{{ url_for('edit_transaction', txn_id=txn.id) }}">Edit</a>
+        <form method="POST" action="{{ url_for('delete_transaction', txn_id=txn.id) }}"
+              onsubmit="return confirm('Delete this transaction?');" class="inline-form">
+          <button type="submit" class="link-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+{% endblock %}

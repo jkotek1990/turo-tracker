@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Confirm Import - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>Confirm Import</h2>
+<p class="subtitle">{{ rows|length }} trip(s) found in the file.</p>
+
+<form method="POST" action="{{ url_for('import_confirm') }}">
+  <input type="hidden" name="rows_json" value="{{ rows_json }}">
+
+  {% if unmapped_vehicles %}
+  <h3>Match vehicles to your cars</h3>
+  <div class="mapping-list">
+    {% for vid, v in unmapped_vehicles.items() %}
+      <div class="mapping-row">
+        <div class="mapping-vehicle">
+          {{ v.title or v.name }}
+          <span class="sub">{{ v.name }}</span>
+        </div>
+        <select name="vehicle_map_{{ vid }}">
+          <option value="new" selected>+ Create new car "{{ v.title or v.name }}"</option>
+          {% for car in existing_cars %}
+            <option value="{{ car.id }}">Link to existing: {{ car.nickname }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if mapped_vehicles %}
+  <div class="mapping-list">
+    {% for vid, car in mapped_vehicles.items() %}
+      <div class="already-linked">✓ {{ car.nickname }} — already linked, trips will be added to this car</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <h3>Trips</h3>
+  <div class="import-toolbar">
+    <span class="subtitle">Uncheck any trip you don't want imported.</span>
+    <span class="select-links">
+      <a href="#" onclick="toggleAll(true); return false;">Select all</a>
+      <a href="#" onclick="toggleAll(false); return false;">Select none</a>
+    </span>
+  </div>
+
+  <table class="txn-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Date</th>
+        <th>Vehicle</th>
+        <th>Guest</th>
+        <th>Status</th>
+        <th class="right">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><input type="checkbox" class="row-check" name="import_ids" value="{{ row.reservation_id }}" {{ 'checked' if row.checked }}></td>
+        <td>{{ row.date }}</td>
+        <td>{{ row.vehicle_title or row.vehicle_name }}</td>
+        <td>{{ row.guest }}</td>
+        <td><span class="pill {{ 'pill-income' if row.status in ['Completed', 'In-progress'] else 'pill-neutral' }}">{{ row.status }}</span></td>
+        <td class="right {{ 'income' if row.amount > 0 else '' }}">${{ "%.2f"|format(row.amount) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="form-actions" style="margin-top: 20px;">
+    <button type="submit" class="btn">Import Selected Trips</button>
+    <a href="{{ url_for('import_csv') }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+
+<script>
+  function toggleAll(checked) {
+    document.querySelectorAll('.row-check').forEach(cb => cb.checked = checked);
+  }
+</script>
+
+{% endblock %}

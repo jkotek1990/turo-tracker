@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Utilization - Turo Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2>Vehicle Utilization</h2>
+    <p class="subtitle">
+      Booked days per month vs. days in the month, based on imported trip start/end dates. Trips that span a
+      month boundary have their nights split across both months, so a month's total never exceeds its actual
+      number of days.
+    </p>
+  </div>
+</div>
+
+{% if unknown_trips %}
+<div class="flash flash-error">
+  {{ unknown_trips }} of {{ total_trips }} trip(s) this year don't have a recorded end date on file (imported
+  before end-date tracking was added, or entered manually) &mdash; those are counted as a single day each, which
+  understates their real length and drags utilization down.
+  <a href="{{ url_for('import_csv') }}">Re-import your latest Turo CSV</a> to backfill the real end dates for
+  matching trips (no duplicates &mdash; it updates existing entries by reservation ID).
+</div>
+{% endif %}
+
+<label style="display:inline-block; margin-bottom:20px;">
+  Year
+  <select onchange="location.href='{{ url_for('utilization') }}?year=' + this.value" style="display:block; margin-top:6px; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px;">
+    {% for y in years %}
+      <option value="{{ y }}" {{ 'selected' if y == year }}>{{ y }}</option>
+    {% endfor %}
+  </select>
+</label>
+
+{% if not data %}
+  <p class="empty-state">No cars yet.</p>
+{% else %}
+  {% for entry in data %}
+  <h3>{{ entry.car.nickname }}{% if not entry.car.active %} <span class="badge">Inactive</span>{% endif %}</h3>
+  <table class="txn-table" style="margin-bottom:24px;">
+    <thead>
+      <tr>
+        <th>Month</th>
+        <th class="right">Booked Days</th>
+        <th class="right">Days in Month</th>
+        <th class="right">Utilization</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in entry.months %}
+      <tr>
+        <td>{{ m.name }}</td>
+        <td class="right">{{ "%.0f"|format(m.booked_days) }}</td>
+        <td class="right">{{ m.days_in_month }}</td>
+        <td class="right">{{ m.utilization_pct }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endfor %}
+{% endif %}
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+{% endblock %}

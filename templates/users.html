@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Users - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>Users</h2>
+<p class="subtitle">Everyone with an account has full, equal access to add/edit/delete anything in the app.</p>
+
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Username</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.display_name or user.username }}{% if current_user and user.id == current_user.id %} (you){% endif %}</td>
+      <td>{{ user.username }}</td>
+      <td class="row-actions">
+        <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}"
+              onsubmit="return confirm('Delete this user? They will no longer be able to log in.');" class="inline-form">
+          <button type="submit" class="link-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h3 style="margin-top:28px;">Add a User</h3>
+<form method="POST" class="form">
+  <label>Name
+    <input type="text" name="display_name" placeholder="e.g. Alex (used to label who's owed what)">
+  </label>
+  <label>Username *
+    <input type="text" name="username" required>
+  </label>
+  <label>Password *
+    <input type="password" name="password" required>
+  </label>
+  <div class="form-actions">
+    <button type="submit" class="btn">Add User</button>
+  </div>
+</form>
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+{% endblock %}

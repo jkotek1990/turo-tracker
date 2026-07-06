@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Log Oil Change - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>Log Oil Change &mdash; {{ car.nickname }}</h2>
+<p class="subtitle" style="margin-top:-4px;">
+  {% if odometer_status.current is not none %}
+    Current odometer on file: {{ "%.0f"|format(odometer_status.current) }} mi (from your latest Turo import or log entry).
+  {% else %}
+    No odometer readings on file yet for this car &mdash; enter the reading shown at the time of this oil change.
+  {% endif %}
+</p>
+
+<form method="POST" class="form">
+  <label>Date *
+    <input type="date" name="date" required value="{{ today }}">
+  </label>
+
+  <label>Odometer reading at oil change (miles) *
+    <input type="number" step="1" min="0" name="reading" required value="{{ odometer_status.current|round(0)|int if odometer_status.current is not none else '' }}">
+  </label>
+
+  <label>Notes
+    <textarea name="notes" rows="3" placeholder="Optional details (e.g. shop, oil type)"></textarea>
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn">Log Oil Change</button>
+    <a href="{{ url_for('car_detail', car_id=car.id) }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+
+{% endblock %}

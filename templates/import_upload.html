@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Import Turo CSV - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>Import Turo Trip Earnings</h2>
+
+<p class="subtitle" style="margin-top:-8px;">
+  Last imported:
+  {% if last_import_at %}{{ last_import_at }} UTC{% else %}never{% endif %}
+</p>
+
+<div class="import-box">
+  <p>Upload the CSV export from Turo's Host Tools &rarr; Earnings page. Each trip becomes an income transaction on the matching car, using Turo's "Total earnings" figure (already net of fees, discounts, and Turo's service fee).</p>
+
+  <ol>
+    <li>In Turo, go to Earnings and export your trip history as CSV.</li>
+    <li>Upload it below.</li>
+    <li>Match vehicles to your cars and pick which trips to import.</li>
+  </ol>
+
+  <form method="POST" enctype="multipart/form-data">
+    <div class="file-input">
+      <input type="file" name="csv_file" accept=".csv" required>
+    </div>
+    <button type="submit" class="btn">Upload &amp; Preview</button>
+  </form>
+
+  <p>Re-uploading a file that overlaps a previous import is safe — trips already imported (matched by reservation ID) will be updated in place, not duplicated.</p>
+</div>
+
+{% endblock %}

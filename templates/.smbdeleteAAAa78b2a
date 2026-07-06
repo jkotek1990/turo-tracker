@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Turo Tracker{% endblock %}
+{% block content %}
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Total Income</div>
+    <div class="card-value income">${{ "%.2f"|format(grand_income) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Total Expenses</div>
+    <div class="card-value expense">${{ "%.2f"|format(grand_expense) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Net Profit</div>
+    <div class="card-value {{ 'income' if grand_net >= 0 else 'expense' }}">${{ "%.2f"|format(grand_net) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Cash Flow (after payback)</div>
+    <div class="card-value {{ 'income' if cash_flow >= 0 else 'expense' }}">${{ "%.2f"|format(cash_flow) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">General Expenses <a href="{{ url_for('general_expenses') }}" style="font-weight:400;">(view)</a></div>
+    <div class="card-value expense">${{ "%.2f"|format(general_total) }}</div>
+  </div>
+  {% if reimbursement_owed > 0 %}
+  <a class="card card-link" href="{{ url_for('reimbursements') }}">
+    <div class="card-label">Owed for Reimbursement</div>
+    <div class="card-value expense">${{ "%.2f"|format(reimbursement_owed) }}</div>
+  </a>
+  {% endif %}
+</section>
+
+<p class="subtitle" style="margin-top:-20px; margin-bottom:8px;">
+  Net Profit is what you'd report for taxes (excludes loan/cash payback, since only interest is deductible).
+  Cash Flow subtracts payback payments too, showing what's actually left in your pocket.
+</p>
+<p class="subtitle" style="margin-bottom:20px;">
+  Last CSV import: {% if last_import_at %}{{ last_import_at }} UTC{% else %}never{% endif %}
+  &mdash; <a href="{{ url_for('import_csv') }}">import now</a>
+</p>
+
+<div class="page-header">
+  <h2>This Month &mdash; {{ current_month_label }}</h2>
+  <div class="page-header-actions">
+    <a href="{{ url_for('monthly_summary') }}" class="btn btn-secondary btn-small">View Monthly Summary</a>
+  </div>
+</div>
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Income</div>
+    <div class="card-value income">${{ "%.2f"|format(current_month_totals.income) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Expenses</div>
+    <div class="card-value expense">${{ "%.2f"|format(current_month_totals.expense) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Net Profit</div>
+    <div class="card-value {{ 'income' if current_month_totals.net >= 0 else 'expense' }}">${{ "%.2f"|format(current_month_totals.net) }}</div>
+  </div>
+</section>
+
+<h2>Your Cars</h2>
+
+{% if not cars %}
+  <p class="empty-state">No cars yet. <a href="{{ url_for('new_car') }}">Add your first car</a> to start tracking.</p>
+{% else %}
+  <div class="car-grid">
+    {% for car in cars %}
+      <a class="car-card {{ 'inactive' if not car.active }}" href="{{ url_for('car_detail', car_id=car.id) }}">
+        <div class="car-card-header">
+          <span class="car-name">{{ car.nickname }}</span>
+          {% if not car.active %}<span class="badge">Inactive</span>{% endif %}
+        </div>
+        <div class="car-meta">{{ car.year or '' }} {{ car.make or '' }} {{ car.model or '' }}</div>
+        <div class="car-numbers">
+          <div><span class="label">Income</span><span class="income">${{ "%.2f"|format(car.income) }}</span></div>
+          <div><span class="label">Expenses</span><span class="expense">${{ "%.2f"|format(car.expense) }}</span></div>
+          <div><span class="label">Net</span><span class="{{ 'income' if car.net >= 0 else 'expense' }}">${{ "%.2f"|format(car.net) }}</span></div>
+        </div>
+        {% if (car.funding_type and car.owed_remaining > 0) or car.reimbursement > 0 or car.odometer_status.due %}
+        <div class="car-owed">
+          {% if car.funding_type and car.owed_remaining > 0 %}<div>Owed to {{ car.funding_label }}: ${{ "%.2f"|format(car.owed_remaining) }}</div>{% endif %}
+          {% if car.reimbursement > 0 %}<div>Reimbursement owed: ${{ "%.2f"|format(car.reimbursement) }}</div>{% endif %}
+          {% if car.odometer_status.due %}<div><span class="pill pill-warn">Oil change due</span> ({{ "%.0f"|format(car.odometer_status.since) }} mi since last)</div>{% endif %}
+        </div>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% endblock %}

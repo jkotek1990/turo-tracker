@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}{{ car.nickname }} - Turo Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2>{{ car.nickname }}</h2>
+    <p class="subtitle">{{ car.year or '' }} {{ car.make or '' }} {{ car.model or '' }}</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('new_transaction', car_id=car.id) }}" class="btn">+ Add Transaction</a>
+    <a href="{{ url_for('edit_car', car_id=car.id) }}" class="btn btn-secondary">Edit Car</a>
+  </div>
+</div>
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Income</div>
+    <div class="card-value income">${{ "%.2f"|format(totals.income) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Expenses</div>
+    <div class="card-value expense">${{ "%.2f"|format(totals.expense) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Net Profit</div>
+    <div class="card-value {{ 'income' if totals.net >= 0 else 'expense' }}">${{ "%.2f"|format(totals.net) }}</div>
+  </div>
+  {% if car.funding_type %}
+  <div class="card">
+    <div class="card-label">Cash Flow (after payback)</div>
+    <div class="card-value {{ 'income' if cash_flow >= 0 else 'expense' }}">${{ "%.2f"|format(cash_flow) }}</div>
+  </div>
+  {% endif %}
+  {% if car.funding_type %}
+  <div class="card">
+    <div class="card-label">Owed to {{ 'you' if car.funding_type == 'cash' else 'bank' }}</div>
+    <div class="card-value {{ 'expense' if owed.remaining > 0 else 'income' }}">${{ "%.2f"|format(owed.remaining) }}</div>
+  </div>
+  {% endif %}
+  {% if reimbursement > 0 %}
+  <a class="card card-link" href="{{ url_for('reimbursements', car_id=car.id) }}">
+    <div class="card-label">Owed for Reimbursement</div>
+    <div class="card-value expense">${{ "%.2f"|format(reimbursement) }}</div>
+  </a>
+  {% endif %}
+</section>
+
+<div class="page-header">
+  <h3>Maintenance &mdash; Oil Change Tracking</h3>
+  <div class="page-header-actions">
+    <a href="{{ url_for('new_oil_change', car_id=car.id) }}" class="btn">+ Log Oil Change</a>
+  </div>
+</div>
+
+{% if odometer_status.current is none %}
+  <p class="empty-state">No odometer readings yet &mdash; these come in automatically from your Turo CSV imports (check-out odometer), or you can log an oil change manually below.</p>
+{% else %}
+  <section class="summary-cards">
+    <div class="card">
+      <div class="card-label">Current Odometer</div>
+      <div class="card-value">{{ "%.0f"|format(odometer_status.current) }} mi</div>
+    </div>
+    {% if odometer_status.last_oil_reading is not none %}
+    <div class="card">
+      <div class="card-label">Last Oil Change</div>
+      <div class="card-value">{{ "%.0f"|format(odometer_status.last_oil_reading) }} mi</div>
+      <div class="car-meta" style="margin-top:4px;">{{ odometer_status.last_oil_date }}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Miles Since Oil Change</div>
+      <div class="card-value {{ 'expense' if odometer_status.due else 'income' }}">{{ "%.0f"|format(odometer_status.since) }} mi</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Status (every {{ odometer_status.interval }} mi)</div>
+      <div class="card-value">
+        {% if odometer_status.due %}
+          <span class="pill pill-warn">Due now</span>
+        {% else %}
+          <span class="pill pill-neutral">OK &mdash; {{ "%.0f"|format(odometer_status.remaining) }} mi left</span>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="card-label">Last Oil Change</div>
+      <div class="card-value">Not logged yet</div>
+    </div>
+    {% endif %}
+  </section>
+{% endif %}
+
+{% if odometer_logs %}
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Reading</th>
+      <th>Source</th>
+      <th>Notes</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for log in odometer_logs %}
+    <tr>
+      <td>{{ log.date }}</td>
+      <td>{{ "%.0f"|format(log.reading) }} mi</td>
+      <td>{% if log.oil_change %}<span class="pill pill-income">Oil change</span>{% else %}<span class="pill pill-neutral">Odometer</span>{% endif %}</td>
+      <td class="notes">{{ log.notes or '' }}</td>
+      <td class="row-actions">
+        <form method="POST" action="{{ url_for('delete_odometer_log', log_id=log.id) }}"
+              onsubmit="return confirm('Delete this odometer entry?');" class="inline-form">
+          <button type="submit" class="link-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if car.funding_type %}
+<div class="page-header">
+  <h3>Payback Balance &mdash; {{ 'Owed to You' if car.funding_type == 'cash' else 'Owed to Bank' }}</h3>
+  <div class="page-header-actions">
+    <a href="{{ url_for('new_payback', car_id=car.id) }}" class="btn">+ Log Payback</a>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:-8px;">
+  Original: ${{ "%.2f"|format(owed.initial) }} &mdash; Paid back so far: ${{ "%.2f"|format(owed.paid) }} &mdash; Remaining: ${{ "%.2f"|format(owed.remaining) }}
+</p>
+
+{% if not paybacks %}
+  <p class="empty-state">No paybacks logged yet.</p>
+{% else %}
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Notes</th>
+      <th class="right">Amount</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for pb in paybacks %}
+    <tr>
+      <td>{{ pb.date }}</td>
+      <td class="notes">{{ pb.notes or '' }}</td>
+      <td class="right income">-${{ "%.2f"|format(pb.amount) }}</td>
+      <td class="row-actions">
+        <a href="{{ url_for('edit_payback', payback_id=pb.id) }}">Edit</a>
+        <form method="POST" action="{{ url_for('delete_payback', payback_id=pb.id) }}"
+              onsubmit="return confirm('Delete this payback?');" class="inline-form">
+          <button type="submit" class="link-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+
+<h3>Transactions</h3>
+
+{% if not transactions %}
+  <p class="empty-state">No transactions yet. <a href="{{ url_for('new_transaction', car_id=car.id) }}">Add the first one</a>.</p>
+{% else %}
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Type</th>
+      <th>Category</th>
+      <th>Paid</th>
+      <th>Notes</th>
+      <th class="right">Amount</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for txn in transactions %}
+    <tr>
+      <td>{{ txn.date }}</td>
+      <td><span class="pill pill-{{ txn.type }}">{{ txn.type }}</span></td>
+      <td>
+        {{ txn.category }}
+        {% if txn.category == 'Mileage' and txn.miles %}
+          <br><span class="subtitle" style="font-size:11px; margin:0;">{{ txn.miles }} mi @ ${{ '%.3f'|format(txn.mileage_rate) }}</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if txn.type == 'expense' %}
+          {% if txn.paid_by_company %}<span class="pill pill-neutral">Company</span>{% else %}<span class="pill pill-warn">Reimburse</span>{% endif %}
+        {% else %}
+          &mdash;
+        {% endif %}
+      </td>
+      <td class="notes">{{ txn.notes or '' }}</td>
+      <td class="right {{ 'income' if txn.type == 'income' else 'expense' }}">
+        {{ '+' if txn.type == 'income' else '-' }}${{ "%.2f"|format(txn.amount) }}
+      </td>
+      <td class="row-actions">
+        <a href="{{ url_for('edit_transaction', txn_id=txn.id) }}">Edit</a>
+        <form method="POST" action="{{ url_for('delete_transaction', txn_id=txn.id) }}"
+              onsubmit="return confirm('Delete this transaction?');" class="inline-form">
+          <button type="submit" class="link-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+{% endblock %}

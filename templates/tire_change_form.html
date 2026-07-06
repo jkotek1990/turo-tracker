@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Log Tire Change - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>Log Tire Change &mdash; {{ car.nickname }}</h2>
+<p class="subtitle" style="margin-top:-4px;">
+  {% if tire_status.current is not none %}
+    Current odometer on file: {{ "%.0f"|format(tire_status.current) }} mi (from your latest Turo import or log entry).
+  {% else %}
+    No odometer readings on file yet for this car &mdash; enter the reading shown at the time of this tire change.
+  {% endif %}
+</p>
+
+<form method="POST" class="form">
+  <label>Date *
+    <input type="date" name="date" required value="{{ today }}">
+  </label>
+
+  <label>Odometer reading at tire change (miles) *
+    <input type="number" step="1" min="0" name="reading" required value="{{ tire_status.current|round(0)|int if tire_status.current is not none else '' }}">
+  </label>
+
+  <label>Notes
+    <textarea name="notes" rows="3" placeholder="Optional details (e.g. shop, tire brand)"></textarea>
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn">Log Tire Change</button>
+    <a href="{{ url_for('car_detail', car_id=car.id) }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+
+{% endblock %}

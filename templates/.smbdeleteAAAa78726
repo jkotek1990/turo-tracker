@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}General Expenses - Turo Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2>General Business Expenses</h2>
+    <p class="subtitle">Costs shared across your whole fleet (cleaning supplies, etc.), not tied to one car.</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('new_general_expense') }}" class="btn">+ Add Expense</a>
+  </div>
+</div>
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Total General Expenses</div>
+    <div class="card-value expense">${{ "%.2f"|format(total) }}</div>
+  </div>
+  {% if reimbursement_total > 0 %}
+  <div class="card">
+    <div class="card-label">Owed for Reimbursement</div>
+    <div class="card-value expense">${{ "%.2f"|format(reimbursement_total) }}</div>
+  </div>
+  {% endif %}
+</section>
+
+{% if not expenses %}
+  <p class="empty-state">No general expenses yet. <a href="{{ url_for('new_general_expense') }}">Add the first one</a>.</p>
+{% else %}
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Category</th>
+      <th>Paid</th>
+      <th>Notes</th>
+      <th class="right">Amount</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for exp in expenses %}
+    <tr>
+      <td>{{ exp.date }}</td>
+      <td>{{ exp.category }}</td>
+      <td>
+        {% if exp.paid_by_company %}<span class="pill pill-neutral">Company</span>{% else %}<span class="pill pill-warn">Reimburse</span>{% endif %}
+      </td>
+      <td class="notes">{{ exp.notes or '' }}</td>
+      <td class="right expense">-${{ "%.2f"|format(exp.amount) }}</td>
+      <td class="row-actions">
+        <a href="{{ url_for('edit_general_expense', expense_id=exp.id) }}">Edit</a>
+        <form method="POST" action="{{ url_for('delete_general_expense', expense_id=exp.id) }}"
+              onsubmit="return confirm('Delete this expense?');" class="inline-form">
+          <button type="submit" class="link-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+{% endblock %}

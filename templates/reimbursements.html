@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Owed for Reimbursement - Turo Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2>Owed for Reimbursement{% if car %} &mdash; {{ car.nickname }}{% endif %}{% if scope == 'general' %} &mdash; General Expenses{% endif %}</h2>
+    <p class="subtitle">Expenses paid out of pocket that still need to be paid back.</p>
+  </div>
+</div>
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Total Owed</div>
+    <div class="card-value expense">${{ "%.2f"|format(total) }}</div>
+  </div>
+</section>
+
+{% if not rows %}
+  <p class="empty-state">Nothing outstanding &mdash; everything's been paid back (or paid directly by the company).</p>
+{% else %}
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Car / Source</th>
+      <th>Category</th>
+      <th>Reimburse To</th>
+      <th>Notes</th>
+      <th class="right">Amount</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.date }}</td>
+      <td>{{ row.source }}</td>
+      <td>{{ row.category }}</td>
+      <td>{{ row.reimburse_to }}</td>
+      <td class="notes">{{ row.notes or '' }}</td>
+      <td class="right expense">-${{ "%.2f"|format(row.amount) }}</td>
+      <td class="row-actions">
+        {% if row.kind == 'transaction' %}
+          <a href="{{ url_for('edit_transaction', txn_id=row.id) }}">Edit</a>
+        {% else %}
+          <a href="{{ url_for('edit_general_expense', expense_id=row.id) }}">Edit</a>
+        {% endif %}
+        <form method="POST" action="{{ url_for('mark_reimbursement_paid') }}" class="inline-form">
+          <input type="hidden" name="kind" value="{{ row.kind }}">
+          <input type="hidden" name="id" value="{{ row.id }}">
+          {% if car %}<input type="hidden" name="car_id" value="{{ car.id }}">{% endif %}
+          {% if scope %}<input type="hidden" name="scope" value="{{ scope }}">{% endif %}
+          <button type="submit" class="link-primary">Mark Paid</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+{% endblock %}

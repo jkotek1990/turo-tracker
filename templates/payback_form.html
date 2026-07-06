@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if payback else 'Log' }} Payback - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>{{ 'Edit' if payback else 'Log' }} Payback &mdash; {{ car.nickname }}</h2>
+<p class="subtitle" style="margin-top:-4px;">
+  Repayment of {{ 'the cash ' + funding_label + ' fronted' if car.funding_type == 'cash' else 'the bank loan' }} for this car.
+  {% if car.funding_type == 'financed' %}
+    Only the interest portion of a loan payment is tax-deductible &mdash; enter your total payment amount below,
+    then split out the interest portion so Net Profit reflects just that part, while the principal still
+    reduces your loan balance and Cash Flow.
+  {% else %}
+    This does not affect income/expense or Net Profit &mdash; it does reduce the Cash Flow figure, since it's
+    real money out the door.
+  {% endif %}
+</p>
+
+<form method="POST" class="form">
+  <label>Date *
+    <input type="date" name="date" required value="{{ payback.date if payback else today }}">
+  </label>
+
+  <label>{{ 'Total payment amount ($)' if car.funding_type == 'financed' else 'Amount ($)' }} *
+    <input type="number" step="0.01" min="0" name="amount" id="amount-input" required value="{{ payback.amount if payback else '' }}">
+  </label>
+
+  {% if car.funding_type == 'financed' %}
+  <label>Interest portion ($) &mdash; tax-deductible
+    <input type="number" step="0.01" min="0" name="interest_amount" id="interest-input" value="{{ payback.interest_amount if payback and payback.interest_amount else '' }}">
+  </label>
+  <p class="subtitle" id="principal-hint" style="margin:0;"></p>
+  {% endif %}
+
+  <label>Notes
+    <textarea name="notes" rows="3" placeholder="Optional details">{{ payback.notes if payback else '' }}</textarea>
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn">{{ 'Save Changes' if payback else 'Log Payback' }}</button>
+    <a href="{{ url_for('car_detail', car_id=car.id) }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+
+{% if car.funding_type == 'financed' %}
+<script>
+  function updatePrincipalHint() {
+    const amount = parseFloat(document.getElementById('amount-input').value) || 0;
+    const interest = parseFloat(document.getElementById('interest-input').value) || 0;
+    document.getElementById('principal-hint').textContent =
+      'Principal (reduces loan balance): $' + Math.max(amount - interest, 0).toFixed(2);
+  }
+  document.getElementById('amount-input').addEventListener('input', updatePrincipalHint);
+  document.getElementById('interest-input').addEventListener('input', updatePrincipalHint);
+  updatePrincipalHint();
+</script>
+{% endif %}
+
+{% endblock %}

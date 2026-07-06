@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if txn else 'Add' }} Transaction - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>{{ 'Edit' if txn else 'Add' }} Transaction &mdash; {{ car.nickname }}</h2>
+
+<form method="POST" class="form" id="txn-form">
+  <label>Date *
+    <input type="date" name="date" required value="{{ txn.date if txn else today }}">
+  </label>
+
+  <fieldset class="type-toggle">
+    <legend>Type *</legend>
+    <label class="radio">
+      <input type="radio" name="type" value="income" {{ 'checked' if (txn and txn.type == 'income') or not txn }} onchange="updateCategories()">
+      Income
+    </label>
+    <label class="radio">
+      <input type="radio" name="type" value="expense" {{ 'checked' if txn and txn.type == 'expense' }} onchange="updateCategories()">
+      Expense
+    </label>
+  </fieldset>
+
+  <label>Category *
+    <select name="category" id="category-select" required></select>
+  </label>
+
+  <label>Amount ($) *
+    <input type="number" step="0.01" min="0" name="amount" required value="{{ txn.amount if txn else '' }}">
+  </label>
+
+  <div id="paid-by-row">
+    <label class="checkbox">
+      <input type="checkbox" name="paid_by_company" {{ 'checked' if not txn or txn.paid_by_company }}>
+      Paid directly from the company (uncheck if you need to be reimbursed)
+    </label>
+  </div>
+
+  <label>Notes
+    <textarea name="notes" rows="3" placeholder="Optional details">{{ txn.notes if txn else '' }}</textarea>
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn">{{ 'Save Changes' if txn else 'Add Transaction' }}</button>
+    <a href="{{ url_for('car_detail', car_id=car.id) }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+
+<script>
+  const incomeCategories = {{ categories_income|tojson }};
+  const expenseCategories = {{ categories_expense|tojson }};
+  const selectedCategory = {{ (txn.category if txn else '')|tojson }};
+
+  function updateCategories() {
+    const type = document.querySelector('input[name="type"]:checked').value;
+    const select = document.getElementById('category-select');
+    const options = type === 'income' ? incomeCategories : expenseCategories;
+    select.innerHTML = '';
+    options.forEach(opt => {
+      const el = document.createElement('option');
+      el.value = opt;
+      el.textContent = opt;
+      if (opt === selectedCategory) el.selected = true;
+      select.appendChild(el);
+    });
+    document.getElementById('paid-by-row').style.display = type === 'expense' ? 'block' : 'none';
+  }
+
+  updateCategories();
+</script>
+
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit Car' if car else 'Add Car' }} - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>{{ 'Edit Car' if car else 'Add Car' }}</h2>
+
+<form method="POST" class="form">
+  <label>Nickname *
+    <input type="text" name="nickname" required value="{{ car.nickname if car else '' }}" placeholder="e.g. Blue Model 3">
+  </label>
+  <label>Make
+    <input type="text" name="make" value="{{ car.make if car else '' }}" placeholder="e.g. Tesla">
+  </label>
+  <label>Model
+    <input type="text" name="model" value="{{ car.model if car else '' }}" placeholder="e.g. Model 3">
+  </label>
+  <label>Year
+    <input type="number" name="year" value="{{ car.year if car else '' }}" min="1980" max="2100">
+  </label>
+
+  <fieldset class="type-toggle">
+    <legend>Funding</legend>
+    <label class="radio">
+      <input type="radio" name="funding_type" value="" {{ 'checked' if not car or not car.funding_type }} onchange="updateFundingUI()">
+      Paid in full (nothing owed)
+    </label>
+    <label class="radio">
+      <input type="radio" name="funding_type" value="cash" {{ 'checked' if car and car.funding_type == 'cash' }} onchange="updateFundingUI()">
+      Cash a partner fronted (owed to them)
+    </label>
+    <label class="radio">
+      <input type="radio" name="funding_type" value="financed" {{ 'checked' if car and car.funding_type == 'financed' }} onchange="updateFundingUI()">
+      Financed (owed to bank)
+    </label>
+  </fieldset>
+
+  <div id="owed-to-row" style="display:none;">
+    <label>Which partner fronted the cash? *
+      <select name="owed_to_user_id">
+        {% for user in users %}
+          <option value="{{ user.id }}" {{ 'selected' if car and car.owed_to_user_id == user.id }}>{{ user.display_name or user.username }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <label>Original amount owed ($)
+    <input type="number" step="0.01" min="0" name="owed_initial" value="{{ car.owed_initial if car and car.owed_initial else '' }}" placeholder="0.00">
+  </label>
+
+  <label>Oil change interval (miles)
+    <input type="number" step="1" min="1" name="oil_change_interval_miles" value="{{ car.oil_change_interval_miles if car and car.oil_change_interval_miles else '' }}" placeholder="Default: {{ default_interval }}">
+  </label>
+
+  {% if car %}
+  <label class="checkbox">
+    <input type="checkbox" name="active" {{ 'checked' if car.active }}>
+    Active (still in your fleet)
+  </label>
+  {% endif %}
+
+  <div class="form-actions">
+    <button type="submit" class="btn">{{ 'Save Changes' if car else 'Add Car' }}</button>
+    <a href="{{ url_for('dashboard') if not car else url_for('car_detail', car_id=car.id) }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+
+{% if car %}
+<form method="POST" action="{{ url_for('delete_car', car_id=car.id) }}"
+      onsubmit="return confirm('Delete this car and ALL its transactions? This cannot be undone.');"
+      class="danger-zone">
+  <button type="submit" class="btn btn-danger">Delete Car</button>
+</form>
+{% endif %}
+
+<script>
+  function updateFundingUI() {
+    const type = document.querySelector('input[name="funding_type"]:checked').value;
+    document.getElementById('owed-to-row').style.display = type === 'cash' ? 'block' : 'none';
+  }
+  updateFundingUI();
+</script>
+
+{% endblock %}

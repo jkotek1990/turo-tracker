@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Turo Tracker{% endblock %}
+{% block content %}
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Total Income</div>
+    <div class="card-value income">${{ "%.2f"|format(grand_income) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Total Expenses</div>
+    <div class="card-value expense">${{ "%.2f"|format(grand_expense) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Net Profit</div>
+    <div class="card-value {{ 'income' if grand_net >= 0 else 'expense' }}">${{ "%.2f"|format(grand_net) }}</div>
+  </div>
+</section>
+
+<h2>Your Cars</h2>
+
+{% if not cars %}
+  <p class="empty-state">No cars yet. <a href="{{ url_for('new_car') }}">Add your first car</a> to start tracking.</p>
+{% else %}
+  <div class="car-grid">
+    {% for car in cars %}
+      <a class="car-card {{ 'inactive' if not car.active }}" href="{{ url_for('car_detail', car_id=car.id) }}">
+        <div class="car-card-header">
+          <span class="car-name">{{ car.nickname }}</span>
+          {% if not car.active %}<span class="badge">Inactive</span>{% endif %}
+        </div>
+        <div class="car-meta">{{ car.year or '' }} {{ car.make or '' }} {{ car.model or '' }}</div>
+        <div class="car-numbers">
+          <div><span class="label">Income</span><span class="income">${{ "%.2f"|format(car.income) }}</span></div>
+          <div><span class="label">Expenses</span><span class="expense">${{ "%.2f"|format(car.expense) }}</span></div>
+          <div><span class="label">Net</span><span class="{{ 'income' if car.net >= 0 else 'expense' }}">${{ "%.2f"|format(car.net) }}</span></div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% endblock %}

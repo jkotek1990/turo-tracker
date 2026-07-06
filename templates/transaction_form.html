@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if txn else 'Add' }} Transaction - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>{{ 'Edit' if txn else 'Add' }} Transaction &mdash; {{ car.nickname }}</h2>
+
+<form method="POST" class="form" id="txn-form">
+  <label>Date *
+    <input type="date" name="date" required value="{{ txn.date if txn else today }}">
+  </label>
+
+  <fieldset class="type-toggle">
+    <legend>Type *</legend>
+    <label class="radio">
+      <input type="radio" name="type" value="income" {{ 'checked' if (txn and txn.type == 'income') or not txn }} onchange="updateCategories()">
+      Income
+    </label>
+    <label class="radio">
+      <input type="radio" name="type" value="expense" {{ 'checked' if txn and txn.type == 'expense' }} onchange="updateCategories()">
+      Expense
+    </label>
+  </fieldset>
+
+  <label>Category *
+    <select name="category" id="category-select" required onchange="updateMileageUI()"></select>
+  </label>
+
+  <div id="miles-row" style="display:none;">
+    <label>Miles driven (at ${{ '%.3f'|format(mileage_rate) }}/mi)
+      <input type="number" step="0.1" min="0" id="miles-input" name="miles" value="{{ txn.miles if txn and txn.miles else '' }}" oninput="recomputeMileageAmount()">
+    </label>
+  </div>
+
+  <div id="protection-plan-row" style="display:none;">
+    <label>Protection plan tier (optional)
+      <input type="text" name="protection_plan" value="{{ txn.protection_plan if txn and txn.protection_plan else '' }}" placeholder="e.g. Minimum, Premier, 89% (not on Turo's CSV export - for your own records)">
+    </label>
+  </div>
+
+  <p id="loan-hint" class="subtitle" style="display:none; margin:0;">
+    For a financed car's monthly bank payment, log it as a single
+    <a href="{{ url_for('new_payback', car_id=car.id) }}" target="_blank" rel="noopener">Payback</a> instead and split
+    out the interest there &mdash; that keeps the principal/interest math consistent. Use this "Loan payment" category
+    only for other loan-related charges (e.g. a one-off fee) that aren't part of your regular payoff payment.
+  </p>
+
+  <label>Amount ($) *
+    <input type="number" step="0.01" min="0" name="amount" id="amount-input" required value="{{ txn.amount if txn else '' }}">
+  </label>
+
+  <div id="paid-by-row">
+    <label class="checkbox">
+      <input type="checkbox" id="paid-by-checkbox" name="paid_by_company" {{ 'checked' if not txn or txn.paid_by_company }} onchange="updateReimburseUI()">
+      Paid directly from the company (uncheck if you need to be reimbursed)
+    </label>
+  </div>
+
+  <div id="reimburse-to-row" style="display:none;">
+    <label>Reimburse to
+      <select name="reimburse_to_user_id">
+        {% for user in users %}
+          <option value="{{ user.id }}" {{ 'selected' if (txn and txn.reimburse_to_user_id == user.id) or (not txn and current_user and current_user.id == user.id) }}>{{ user.display_name or user.username }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <label>Notes
+    <textarea name="notes" rows="3" placeholder="Optional details">{{ txn.notes if txn else '' }}</textarea>
+  </label>
+
+  <div class="form-actions">
+    <button type="submit" class="btn">{{ 'Save Changes' if txn else 'Add Transaction' }}</button>
+    <a href="{{ url_for('car_detail', car_id=car.id) }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+
+<script>
+  const incomeCategories = {{ categories_income|tojson }};
+  const expenseCategories = {{ categories_expense|tojson }};
+  const selectedCategory = {{ (txn.category if txn else '')|tojson }};
+  const MILEAGE_RATE = {{ mileage_rate }};
+
+  function updateCategories() {
+    const type = document.querySelector('input[name="type"]:checked').value;
+    const select = document.getElementById('category-select');
+    const options = type === 'income' ? incomeCategories : expenseCategories;
+    select.innerHTML = '';
+    options.forEach(opt => {
+      const el = document.createElement('option');
+      el.value = opt;
+      el.textContent = opt;
+      if (opt === selectedCategory) el.selected = true;
+      select.appendChild(el);
+    });
+    document.getElementById('paid-by-row').style.display = type === 'expense' ? 'block' : 'none';
+    document.getElementById('protection-plan-row').style.display = type === 'income' ? 'block' : 'none';
+    updateMileageUI();
+  }
+
+  function updateMileageUI() {
+    const category = document.getElementById('category-select').value;
+    const milesRow = document.getElementById('miles-row');
+    const amountInput = document.getElementById('amount-input');
+    if (category === 'Mileage') {
+      milesRow.style.display = 'block';
+      amountInput.readOnly = true;
+      recomputeMileageAmount();
+    } else {
+      milesRow.style.display = 'none';
+      amountInput.readOnly = false;
+    }
+    document.getElementById('loan-hint').style.display = category === 'Loan payment' ? 'block' : 'none';
+  }
+
+  function recomputeMileageAmount() {
+    const miles = parseFloat(document.getElementById('miles-input').value) || 0;
+    document.getElementById('amount-input').value = (miles * MILEAGE_RATE).toFixed(2);
+  }
+
+  function updateReimburseUI() {
+    const paidByCompany = document.getElementById('paid-by-checkbox').checked;
+    document.getElementById('reimburse-to-row').style.display = paidByCompany ? 'none' : 'block';
+  }
+
+  updateCategories();
+  updateReimburseUI();
+</script>
+
+{% endblock %}

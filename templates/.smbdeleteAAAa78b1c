@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Monthly Summary - Turo Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2>Monthly Summary</h2>
+    <p class="subtitle">Income, expenses, and net profit by month &mdash; combines all cars and general expenses.</p>
+  </div>
+</div>
+
+<label style="display:inline-block; margin-bottom:20px;">
+  Year
+  <select onchange="location.href='{{ url_for('monthly_summary') }}?year=' + this.value" style="display:block; margin-top:6px; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px;">
+    {% for y in years %}
+      <option value="{{ y }}" {{ 'selected' if y == year }}>{{ y }}</option>
+    {% endfor %}
+  </select>
+</label>
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Total Income</div>
+    <div class="card-value income">${{ "%.2f"|format(total_income) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Total Expenses</div>
+    <div class="card-value expense">${{ "%.2f"|format(total_expense) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Net Profit</div>
+    <div class="card-value {{ 'income' if net >= 0 else 'expense' }}">${{ "%.2f"|format(net) }}</div>
+  </div>
+</section>
+
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Month</th>
+      <th class="right">Income</th>
+      <th class="right">Expenses</th>
+      <th class="right">Net</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for m in months %}
+    <tr>
+      <td>{{ m.name }}</td>
+      <td class="right income">${{ "%.2f"|format(m.income) }}</td>
+      <td class="right expense">${{ "%.2f"|format(m.expense) }}</td>
+      <td class="right {{ 'income' if m.net >= 0 else 'expense' }}">${{ "%.2f"|format(m.net) }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td><strong>Total</strong></td>
+      <td class="right income"><strong>${{ "%.2f"|format(total_income) }}</strong></td>
+      <td class="right expense"><strong>${{ "%.2f"|format(total_expense) }}</strong></td>
+      <td class="right {{ 'income' if net >= 0 else 'expense' }}"><strong>${{ "%.2f"|format(net) }}</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+{% endblock %}

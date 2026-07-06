@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Tax Export - Turo Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2>Tax Export</h2>
+    <p class="subtitle">Category totals for the year &mdash; not tax advice, review with your accountant.</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('tax_export_download', year=year) }}" class="btn">Download CSV</a>
+  </div>
+</div>
+
+<label style="display:inline-block; margin-bottom:20px;">
+  Tax year
+  <select onchange="location.href='{{ url_for('tax_export') }}?year=' + this.value" style="display:block; margin-top:6px; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px;">
+    {% for y in years %}
+      <option value="{{ y }}" {{ 'selected' if y == year }}>{{ y }}</option>
+    {% endfor %}
+  </select>
+</label>
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Total Income</div>
+    <div class="card-value income">${{ "%.2f"|format(total_income) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Total Expenses</div>
+    <div class="card-value expense">${{ "%.2f"|format(total_expense) }}</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Net Profit</div>
+    <div class="card-value {{ 'income' if net >= 0 else 'expense' }}">${{ "%.2f"|format(net) }}</div>
+  </div>
+</section>
+
+<h3>Income by Category</h3>
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Category</th>
+      <th class="right">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for cat in categories_income %}
+    <tr>
+      <td>{{ cat }}</td>
+      <td class="right income">${{ "%.2f"|format(income_totals.get(cat, 0)) }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td><strong>Total Income</strong></td>
+      <td class="right income"><strong>${{ "%.2f"|format(total_income) }}</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Expenses by Category</h3>
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Category</th>
+      <th class="right">Amount</th>
+      <th class="right">Miles</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for cat in categories_expense %}
+    <tr>
+      <td>{{ cat }}</td>
+      <td class="right expense">${{ "%.2f"|format(expense_totals.get(cat, 0)) }}</td>
+      <td class="right">{% if cat == 'Mileage' %}{{ "%.1f"|format(mileage_miles) }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+      <td>Loan Interest (from logged paybacks)</td>
+      <td class="right expense">${{ "%.2f"|format(interest_total) }}</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><strong>Total Expenses</strong></td>
+      <td class="right expense"><strong>${{ "%.2f"|format(total_expense) }}</strong></td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+
+{% if compliance_cars %}
+<h3>Vehicle Compliance &amp; Insurance</h3>
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Car</th>
+      <th>VIN</th>
+      <th>Plate</th>
+      <th>Registration Exp.</th>
+      <th>Inspection Due</th>
+      <th>Insurance</th>
+      <th>Renewal</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for v in compliance_cars %}
+    <tr>
+      <td>{{ v.nickname }}</td>
+      <td>{{ v.vin or '' }}</td>
+      <td>{{ v.license_plate or '' }}</td>
+      <td>{{ v.registration_expiration or '' }}</td>
+      <td>{{ v.inspection_due_date or '' }}</td>
+      <td>{{ v.insurance_carrier or '' }}{% if v.insurance_type %} ({{ v.insurance_type }}){% endif %}</td>
+      <td>{{ v.insurance_renewal_date or '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if distribution_totals %}
+<h3>Partner Distributions</h3>
+<p class="subtitle" style="margin-top:-8px;">
+  Cash draws, not part of P&amp;L &mdash; for basis/capital account tracking.
+</p>
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Partner</th>
+      <th class="right">Total Distributions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in distribution_totals %}
+    <tr>
+      <td>{{ t.label }}</td>
+      <td class="right expense">${{ "%.2f"|format(t.total) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if vehicles %}
+<h3>Vehicle Depreciation Info</h3>
+<p class="subtitle" style="margin-top:-8px;">
+  Not year-specific &mdash; raw facts for your accountant to run the actual depreciation schedule from.
+</p>
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Car</th>
+      <th class="right">Purchase Price</th>
+      <th>Placed in Service</th>
+      <th class="right">Business Use %</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for v in vehicles %}
+    <tr>
+      <td>{{ v.nickname }}</td>
+      <td class="right">${{ "%.2f"|format(v.purchase_price) }}</td>
+      <td>{{ v.placed_in_service_date or '' }}</td>
+      <td class="right">{{ "%.0f"|format(v.business_use_pct) }}%</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+{% endblock %}

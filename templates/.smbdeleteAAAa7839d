@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit Car' if car else 'Add Car' }} - Turo Tracker{% endblock %}
+{% block content %}
+
+<h2>{{ 'Edit Car' if car else 'Add Car' }}</h2>
+
+<form method="POST" class="form">
+  <label>Nickname *
+    <input type="text" name="nickname" required value="{{ car.nickname if car else '' }}" placeholder="e.g. Blue Model 3">
+  </label>
+  <label>Make
+    <input type="text" name="make" value="{{ car.make if car else '' }}" placeholder="e.g. Tesla">
+  </label>
+  <label>Model
+    <input type="text" name="model" value="{{ car.model if car else '' }}" placeholder="e.g. Model 3">
+  </label>
+  <label>Year
+    <input type="number" name="year" value="{{ car.year if car else '' }}" min="1980" max="2100">
+  </label>
+  {% if car %}
+  <label class="checkbox">
+    <input type="checkbox" name="active" {{ 'checked' if car.active }}>
+    Active (still in your fleet)
+  </label>
+  {% endif %}
+
+  <div class="form-actions">
+    <button type="submit" class="btn">{{ 'Save Changes' if car else 'Add Car' }}</button>
+    <a href="{{ url_for('dashboard') if not car else url_for('car_detail', car_id=car.id) }}" class="btn btn-secondary">Cancel</a>
+  </div>
+</form>
+
+{% if car %}
+<form method="POST" action="{{ url_for('delete_car', car_id=car.id) }}"
+      onsubmit="return confirm('Delete this car and ALL its transactions? This cannot be undone.');"
+      class="danger-zone">
+  <button type="submit" class="btn btn-danger">Delete Car</button>
+</form>
+{% endif %}
+
+{% endblock %}

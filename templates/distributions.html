@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Partner Distributions - Turo Tracker{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h2>Partner Distributions</h2>
+    <p class="subtitle">
+      Cash draws taken out of the business by a partner &mdash; separate from expenses or paybacks. Not part of
+      Net Profit or Cash Flow (it's a capital account movement), but worth tracking for each partner's basis and
+      K-1 prep.
+    </p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('new_distribution') }}" class="btn">+ Log Distribution</a>
+  </div>
+</div>
+
+<section class="summary-cards">
+  <div class="card">
+    <div class="card-label">Total Distributions</div>
+    <div class="card-value expense">${{ "%.2f"|format(total) }}</div>
+  </div>
+  {% for t in totals %}
+  <div class="card">
+    <div class="card-label">{{ t.label }}</div>
+    <div class="card-value expense">${{ "%.2f"|format(t.total) }}</div>
+  </div>
+  {% endfor %}
+</section>
+
+{% if not rows %}
+  <p class="empty-state">No distributions logged yet. <a href="{{ url_for('new_distribution') }}">Log the first one</a>.</p>
+{% else %}
+<table class="txn-table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Partner</th>
+      <th>Notes</th>
+      <th class="right">Amount</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in rows %}
+    <tr>
+      <td>{{ d.date }}</td>
+      <td>{{ users_by_id.get(d.user_id, 'Unknown') }}</td>
+      <td class="notes">{{ d.notes or '' }}</td>
+      <td class="right expense">-${{ "%.2f"|format(d.amount) }}</td>
+      <td class="row-actions">
+        <a href="{{ url_for('edit_distribution', distribution_id=d.id) }}">Edit</a>
+        <form method="POST" action="{{ url_for('delete_distribution', distribution_id=d.id) }}"
+              onsubmit="return confirm('Delete this distribution?');" class="inline-form">
+          <button type="submit" class="link-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<p><a href="{{ url_for('dashboard') }}">&larr; Back to Dashboard</a></p>
+
+{% endblock %}
